@@ -1,0 +1,89 @@
+---
+title: "HW4-Data Science Math"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+Using matrix operations, describe the solutions for the following family of equations:
+
+* x + 2y - 3z = 5 
+* 2x + y - 3z = 13 
+* -x + y + 2z= -8
+
+### import Libraries
+```{r}
+library(MASS)
+```
+
+
+### Creating the Matrix
+
+```{r}
+A<-matrix(c(1,2,-3,2,1,-3,-1,1,2),nrow=3,ncol=3,byrow=TRUE)
+
+B<-matrix(c(5,13,-8),nrow=3,ncol=1,byrow=TRUE)
+A;B
+```
+
+#### a.  Find the inverse of the above 3x3 (non-augmented) matrix.
+
+```{r}
+s<-fractions(solve(A))
+s
+```
+
+#### b.  Solve for the solution using R.
+
+```{r}
+solve(A,B)
+```
+
+### c.  Modify the  3x3 matrix such that there exists only one non-zero variable in the solution set.
+
+```{r}
+A2=cbind(B,A[,2],A[,3])
+A2
+A2s<-solve(A2)%*% B
+round(A2s,6)
+```
+
+## Question 2
+
+Consider the matrix,q=matrix(c(3,1,4,4,3,3,2,3,2),nrow=3). Let b=c(1,4,5). Use Cramer's rule and R to determine the solution, x, to qx=b, if one exists.  Show all determinants.
+
+```{r}
+q=matrix(c(3,1,4,4,3,3,2,3,2),nrow=3)
+b=c(1,4,5)
+q;b
+```
+
+create a gramer's function
+
+```{r}
+gramers<-function(ma,mb,nround_off)
+{
+  d=det(q)
+  dx=det(cbind(mb,ma[,2],ma[,3]))
+  dy=det(cbind(ma[,1],mb,ma[,3]))
+  dz=det(cbind(ma[,1],ma[,2],mb))
+  
+  x_val=dx/d
+  y_val=dy/d
+  z_val=dz/d
+  
+  result<-c(round(x_val,nround_off),round(y_val,nround_off),round(z_val,nround_off))
+  return(result)
+}
+```
+
+Solve
+```{r}
+gramers(q,b,6)
+solve(q,b)
+```
+
