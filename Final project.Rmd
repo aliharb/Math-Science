@@ -1,0 +1,266 @@
+---
+title: "Final Project Data Science Math"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Description 
+
+Analyze two random variables, the arrival and departure delay, from the hflights package for correlation.
+
+## Software Preparation  
+
+Install package hflights
+
+
+```{r}
+# install.packages('hflights')
+```
+
+Load libraries 
+
+```{r}
+library(hflights)
+library(ggplot2)
+library(MASS)
+library(survival)
+library(fitdistrplus)
+```
+
+
+## Load Data To The Envirement 
+
+```{r}
+flight_data<-hflights
+str(flight_data)
+```
+
+Get the arrival and departure delays data into variables with NA omitted and print a summary  
+
+```{r}
+ArrDelay_y<-na.omit(flight_data$ArrDelay)
+summary(ArrDelay_y)
+```
+
+```{r}
+DepDelay_X<-na.omit(flight_data$DepDelay)
+summary(DepDelay_X)
+```
+
+## Plot The Variables
+
+```{r}
+hist(ArrDelay_y, main = "Arrival Delay", xlab = "ArrDelay ", ylab = "Frequency",
+                                         xlim = c(0, 1000), breaks = 20, border = "blue")
+```
+
+```{r}
+hist(DepDelay_X, main = "Departure Delay", xlab = "Departure ", ylab = "Frequency",
+                                         xlim = c(0, 1000), breaks = 20, border = "orange")
+```
+
+## Probability analysis
+
+Find the probabilities for a given table
+
+```{r}
+
+#get the count of Py>3d & px>0
+CountArrDelay_HH<-nrow(subset(hflights, ArrDelay 
+                              > quantile(ArrDelay_y,0.75) & DepDelay > 0.000))
+CountArrDelay_HH
+
+
+#P(X>x | Y>y) 
+phh<-(CountArrDelay_HH/length(DepDelay_X))/0.5
+phh
+
+#P(X>x,Y>y)
+pm=0.25*0.5
+pm 
+
+#get the count of Py<3d & px>0
+CountArrDelay_LH<-nrow(subset(hflights, ArrDelay
+                              < quantile(ArrDelay_y,0.75) & DepDelay > 0.000))
+CountArrDelay_LH
+
+#P(X<x,Y>y)
+plh=(CountArrDelay_LH/length(DepDelay_X))/0.5
+plh 
+
+#get the count of Py>3d & px<0
+CountArrDelay_LL<-nrow(subset(hflights, ArrDelay 
+                              < quantile(ArrDelay_y,0.75) & DepDelay < 0.000))
+CountArrDelay_LL
+
+#P(X<x,Y<y)
+pll=(CountArrDelay_LL/length(DepDelay_X))/0.5
+pll 
+
+#get the count of Py<=3d & px<=0
+CountArrDelay_LLe<-nrow(subset(hflights, ArrDelay 
+                               <= quantile(ArrDelay_y,0.75) & DepDelay <= 0.000))
+CountArrDelay_LLe
+
+#P(X<=x,Y<=y)
+plle=(CountArrDelay_LLe/length(DepDelay_X))
+plle 
+
+#get the count of Py<=3d & px>0
+CountArrDelay_LH_e<-nrow(subset(hflights, ArrDelay
+                                <= quantile(ArrDelay_y,0.75) & DepDelay > 0.000))
+CountArrDelay_LH_e
+
+#P(X<=x,Y>y)
+plh_e=(CountArrDelay_LH_e/length(DepDelay_X))
+plh_e 
+
+#get the count of Py>3d & px<=0
+CountArrDelay_HL_e<-nrow(subset(hflights, ArrDelay
+                                > quantile(ArrDelay_y,0.75) & DepDelay <= 0.000))
+CountArrDelay_HL_e
+
+#P(X>x,Y<=y)
+phl_e=(CountArrDelay_HL_e/length(DepDelay_X))
+phl_e 
+
+#P(X>x,Y>y)
+ph_h=(CountArrDelay_HH/length(DepDelay_X))
+ph_h 
+
+
+resultTable = matrix(c(plle,plh_e,(plle+plh_e),phl_e,ph_h,(phl_e+ph_h),
+                       (plle+phl_e),(plh_e+ph_h),((plle+plh_e)+(phl_e+ph_h)) ),
+                     ncol=3, nrow=3,byrow=TRUE)
+colnames(resultTable) = c("<=2d quartile",">2d quartile","Total")
+rownames(resultTable) = c('<=3d quartile', '>3d quartile','Total')
+resultTable.table = as.table(resultTable)
+round(resultTable.table,3)
+```
+
+
+```{r}
+#p(A)
+CountArrDelay<-nrow(subset(hflights, ArrDelay > quantile(ArrDelay_y,0.75)))
+CountArrDelay
+
+pa=CountArrDelay/length(DepDelay_X)
+pa
+
+
+length(CountArrDelay)
+
+#P(B)
+
+CountDepDelay<-nrow(subset(hflights, DepDelay >0.00 &DepDelay <9.00))
+CountDepDelay
+
+CountDepDelay<-nrow(subset(hflights, DepDelay >0.00))
+CountDepDelay
+
+
+pb=CountDepDelay/length(DepDelay_X)
+pb
+
+#P(A)*P(B)
+pab=pa*pb
+pab
+```
+
+As results P(A|B) != P(A)P(B)
+
+before Chisquare we need to clean the vectores with equal length  
+
+```{r}
+get_na_omittedData=na.omit(flight_data)
+```
+
+Chisquare test
+
+```{r}
+chisq.test(get_na_omittedData$ArrDelay,get_na_omittedData$DepDelay,correct = FALSE)
+```
+
+P < 0.05 rejects the null hypothesis that is no relashinship between arrival and departure
+
+lets take the t test and compare it to Chisquare result
+
+```{r}
+t.test(flight_data$DepDelay,flight_data$ArrDelay)
+```
+
+## Descriptive and Inferential Statistics
+
+Provide univariate descriptive statistics and appropriate plots.
+
+```{r}
+cor_matrix=matrix(c(1.0,0.93,0.93,1), ncol =2)
+
+#converting the matrix 
+
+m<-solve(cor_matrix)
+m
+mi1<-cor_matrix%*%m
+mi1
+mi2<-m%*%cor_matrix
+mi2
+
+cor.test(get_na_omittedData$ArrDelay,get_na_omittedData$DepDelay,use="complete.obs")
+
+```
+
+The result of the correlations shows a strong relationship with percentile greater tha 92%  
+
+## Scatter Plot 
+
+Plot the departure delay verses the arrival delay to observe the relationship 
+
+```{r}
+
+y=get_na_omittedData$ArrDelay
+x=get_na_omittedData$DepDelay
+
+ggplot(get_na_omittedData, aes(x,y))+
+    geom_point(shape=1) + 
+    geom_jitter(aes(colour = y))+
+    labs(title = "Arrival Delay vs Departure Delay")+
+    xlab("Departure Delay") +   
+    ylab("Arrival Delay") +
+    geom_smooth(method=lm) 
+```
+
+From the graph and the linear correlation we can conclude that their is a relashinship between the two variables
+
+## Calculus-Based Probability & Statistics
+
+```{r}
+y=y+70
+y.exp <- rexp(1000, 1.297112e-02)
+#Histogram of the original X variable (ArrDelay) before fit
+hist(y.exp, main = "Arrival Delay", xlab = "ArrDelay ", ylab = "Frequency",
+                                        xaxp=c(-50,600,20), border = "green")
+
+# get the 5th Percentile
+qexp(.05,rate=.297112e-02)
+
+#get the 95%
+qexp(.95,rate=.297112e-02)
+
+sd(ArrDelay_y)
+
+e<-qt(0.975,df=length(ArrDelay_y)-1)*sd(ArrDelay_y)/sqrt(length(ArrDelay_y))
+
+l <- mean(ArrDelay_y)-e
+r <- mean(ArrDelay_y)+e
+
+quantile(ArrDelay_y, prob=c(0.05,0.95))
+
+```
+
+## Conclusion 
+
+The correlation of 93% and the small P value shows a strong relationship between the two variables. The analysis indicates that departure delay is related to the cause of arrival delay. Looking at the graph, from the condensed congestion of the jitter points we can also determine that there is strong relationship.  
+
